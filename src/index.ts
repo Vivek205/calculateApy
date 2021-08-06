@@ -27,7 +27,7 @@ const toFraction = (
 
 const web3 = new Web3(
   new Web3.providers.WebsocketProvider(
-    'wss://mainnet.infura.io/ws/v3/ee6afbd4f6fe42e78b68eec31660ec78'
+    'wss://mainnet.infura.io/ws/v3/f992eab8e1244dc793cf14073f01e7ae'
   )
 );
 export const sum = (a: number, b: number) => {
