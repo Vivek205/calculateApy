@@ -6,7 +6,7 @@ import BigNumber from 'bignumber.js';
 
 console.log('given provider', Web3.givenProvider);
 
-const SDAO_USD = 1.9284;
+const SDAO_USD = 1.95;
 const SDAO_STAKE_TOKEN = '0x993864e43caa7f7f12953ad6feb1d1ca635b875f';
 const SDAO_STAKE_YEARLY_REWARDS = '1214720';
 
@@ -62,7 +62,7 @@ const calculateStakeAPY = async (): Promise<string> => {
     .multipliedBy(SDAO_USD)
     .dividedBy(stakedUSD)
     .multipliedBy(100)
-    .decimalPlaces(2)
+    .decimalPlaces(4)
     .toString();
   return apy;
 };
@@ -71,6 +71,8 @@ interface IFarmAPYResult {
   reserveUSD: string;
   totalSupply: string;
   apy: string;
+  stakedBalance: string;
+  unitReserve: string;
 }
 
 const calculateFarmAPY = async (
@@ -114,9 +116,11 @@ const calculateFarmAPY = async (
       .multipliedBy(100);
     // console.log('APY of ', name, 'is', apy.toString());
     return {
-      apy: apy.decimalPlaces(2).toString(),
-      reserveUSD: reserveUSD.decimalPlaces(2).toString(),
-      totalSupply: totalSupply.decimalPlaces(2).toString(),
+      apy: apy.decimalPlaces(4).toString(),
+      reserveUSD: reserveUSD.decimalPlaces(4).toString(),
+      totalSupply: totalSupply.decimalPlaces(4).toString(),
+      stakedBalance: stakedBalance.decimalPlaces(4).toString(),
+      unitReserve: unitReserve.decimalPlaces(4).toString(),
     };
   } catch (error) {
     console.log('balance error', error);
@@ -136,12 +140,12 @@ const pools = [
   },
   {
     tokenAddress: '0x3a925503970d40d36d2329e3846e09fcfc9b6acb',
-    yearlyRewards: 152077.25,
+    yearlyRewards: 91341.25,
     name: 'SDAO-USDT',
   },
   {
     tokenAddress: '0x4bb0925fa50da9b4c8936869433b48e78ccc5c13',
-    yearlyRewards: 152077.25,
+    yearlyRewards: 91341.25,
     name: 'AGIX-USDT',
   },
 ];
