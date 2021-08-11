@@ -10,6 +10,8 @@ const SDAO_TOKEN = '0x993864e43caa7f7f12953ad6feb1d1ca635b875f';
 const SDAO_STAKE_TOKEN = '0x993864e43caa7f7f12953ad6feb1d1ca635b875f';
 const SDAO_STAKE_YEARLY_REWARDS = '1214720';
 
+const UNISWAP_GRAPH_URL = 'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2';
+
 type BigNumberish = BigNumber | string | number;
 const toFraction = (
   balance: BigNumberish,
@@ -41,13 +43,10 @@ const fetchTokenPriceUSD = async (tokenAddress: string) => {
     }
   }
   `;
-  const queryResponse = await axios.post(
-    'https://api.thegraph.com/subgraphs/name/ianlapham/uniswapv2',
-    {
-      query,
-      variables: { tokenAddress },
-    }
-  );
+  const queryResponse = await axios.post(UNISWAP_GRAPH_URL, {
+    query,
+    variables: { tokenAddress },
+  });
 
   const bundle: string = queryResponse.data.data.bundle.ethPrice;
   const derivedETH: string = queryResponse.data.data.token.derivedETH;
@@ -105,13 +104,10 @@ const calculateFarmAPY = async (
     const poolTokenContract = new web3.eth.Contract(ERC20ABI, tokenAddress);
 
     const [queryResponse, balance, decimals]: any[] = await Promise.all([
-      axios.post(
-        'https://api.thegraph.com/subgraphs/name/ianlapham/uniswapv2',
-        {
-          query,
-          variables: { tokenAddress },
-        }
-      ),
+      axios.post(UNISWAP_GRAPH_URL, {
+        query,
+        variables: { tokenAddress },
+      }),
 
       poolTokenContract.methods['balanceOf'](FarmToken).call(),
       poolTokenContract.methods['decimals']().call(),
