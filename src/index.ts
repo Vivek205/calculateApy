@@ -3,8 +3,7 @@ import Web3 from 'web3';
 // import { AbiItem } from 'web3-utils';
 import ERC20ABI from './erc20.abi.json';
 import BigNumber from 'bignumber.js';
-
-console.log('given provider', Web3.givenProvider);
+import { table } from 'table';
 
 const SDAO_TOKEN = '0x993864e43caa7f7f12953ad6feb1d1ca635b875f';
 const SDAO_STAKE_TOKEN = '0x993864e43caa7f7f12953ad6feb1d1ca635b875f';
@@ -60,7 +59,6 @@ const fetchTokenPriceUSD = async (tokenAddress: string) => {
 };
 
 const FarmToken = '0xDa9C2064687Ff02e1331EFB39D1Be0bC5DB600F6';
-console.log('FARMToken', FarmToken);
 
 const calculateStakeAPY = async (sdaoUSD: string): Promise<string> => {
   //@ts-ignore
@@ -140,8 +138,8 @@ const calculateFarmAPY = async (
     return {
       apy: apy.decimalPlaces(4).toString(),
       reserveUSD: reserveUSD.decimalPlaces(4).toString(),
-      totalSupply: totalSupply.decimalPlaces(4).toString(),
-      stakedBalance: stakedBalance.decimalPlaces(4).toString(),
+      totalSupply: totalSupply.precision(4).toString(),
+      stakedBalance: stakedBalance.precision(4).toString(),
       unitReserve: unitReserve.decimalPlaces(4).toString(),
     };
   } catch (error) {
@@ -173,19 +171,36 @@ const pools = [
 ];
 
 const main = async () => {
+  let tableOutput: string[][] = [
+    ['Pool Name', 'Reserve USD', 'Total Supply', 'Staked Balance', 'APY'],
+  ];
+
   const sdaoUSD = await fetchTokenPriceUSD(SDAO_TOKEN);
-  // console.log('sdaoUSD', sdaoUSD);
+
   pools.map(async pool => {
     const result = await calculateFarmAPY(
       pool.tokenAddress,
       pool.yearlyRewards,
       sdaoUSD
     );
-    console.log('POOL =>', pool.name);
-    console.table(result);
+    // console.log('POOL =>', pool.name);
+    // console.table(result);
+    if (result) {
+      tableOutput.push([
+        pool.name,
+        result.reserveUSD,
+        result.totalSupply,
+        result.stakedBalance,
+        result.apy,
+      ]);
+    }
   });
   const sdaoStakeApy = await calculateStakeAPY(sdaoUSD);
+  console.log('Result');
+  console.log('Price of SDAO Token', sdaoUSD, 'USD');
+  console.log('FARM Token', FarmToken);
   console.log('STAKE APY', sdaoStakeApy);
+  console.log(table(tableOutput));
 };
 
 main();
