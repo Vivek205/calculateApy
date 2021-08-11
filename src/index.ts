@@ -6,7 +6,7 @@ import BigNumber from 'bignumber.js';
 
 console.log('given provider', Web3.givenProvider);
 
-const SDAO_USD = 1.95;
+const SDAO_TOKEN = '0x993864e43caa7f7f12953ad6feb1d1ca635b875f';
 const SDAO_STAKE_TOKEN = '0x993864e43caa7f7f12953ad6feb1d1ca635b875f';
 const SDAO_STAKE_YEARLY_REWARDS = '1214720';
 
@@ -30,26 +30,39 @@ const web3 = new Web3(
     'wss://mainnet.infura.io/ws/v3/f992eab8e1244dc793cf14073f01e7ae'
   )
 );
-export const sum = (a: number, b: number) => {
-  if ('development' === process.env.NODE_ENV) {
-    console.log(a + b);
-    console.log('boop');
+
+const fetchTokenPriceUSD = async (tokenAddress: string) => {
+  const query = `query TokenPrice($tokenAddress: Bytes!){
+    bundle(id:1){
+      ethPrice
+    }
+    token(id: $tokenAddress){
+      derivedETH
+    }
   }
-  return a + b;
+  `;
+  const queryResponse = await axios.post(
+    'https://api.thegraph.com/subgraphs/name/ianlapham/uniswapv2',
+    {
+      query,
+      variables: { tokenAddress },
+    }
+  );
+
+  const bundle: string = queryResponse.data.data.bundle.ethPrice;
+  const derivedETH: string = queryResponse.data.data.token.derivedETH;
+
+  const usdValue = new BigNumber(bundle)
+    .multipliedBy(derivedETH)
+    .decimalPlaces(2)
+    .toString();
+  return usdValue;
 };
 
 const FarmToken = '0xDa9C2064687Ff02e1331EFB39D1Be0bC5DB600F6';
 console.log('FARMToken', FarmToken);
 
-const query = `query Pair($tokenAddress: Bytes!){
-  pair(id: $tokenAddress){
-    id
-    reserveUSD
-    totalSupply
-  }
-}`;
-
-const calculateStakeAPY = async (): Promise<string> => {
+const calculateStakeAPY = async (sdaoUSD: string): Promise<string> => {
   //@ts-ignore
   const sdaoStakeContract = new web3.eth.Contract(ERC20ABI, SDAO_STAKE_TOKEN);
   const [balance, decimals] = await Promise.all([
@@ -57,9 +70,9 @@ const calculateStakeAPY = async (): Promise<string> => {
     sdaoStakeContract.methods['decimals']().call(),
   ]);
   const stakedBalance = toFraction(balance, decimals);
-  const stakedUSD = stakedBalance.multipliedBy(SDAO_USD);
+  const stakedUSD = stakedBalance.multipliedBy(sdaoUSD);
   const apy = new BigNumber(SDAO_STAKE_YEARLY_REWARDS)
-    .multipliedBy(SDAO_USD)
+    .multipliedBy(sdaoUSD)
     .dividedBy(stakedUSD)
     .multipliedBy(100)
     .decimalPlaces(4)
@@ -77,8 +90,17 @@ interface IFarmAPYResult {
 
 const calculateFarmAPY = async (
   tokenAddress: string,
-  yearlyRewards: number
+  yearlyRewards: number,
+  sdaoUSD: string
 ): Promise<IFarmAPYResult | void> => {
+  const query = `query Pair($tokenAddress: Bytes!){
+    pair(id: $tokenAddress){
+      id
+      reserveUSD
+      totalSupply
+    }
+  }`;
+
   try {
     //@ts-ignore
     const poolTokenContract = new web3.eth.Contract(ERC20ABI, tokenAddress);
@@ -111,7 +133,7 @@ const calculateFarmAPY = async (
       .multipliedBy(reserveUSD)
       .dividedBy(totalSupply);
     const apy = new BigNumber(yearlyRewards)
-      .multipliedBy(SDAO_USD)
+      .multipliedBy(sdaoUSD)
       .dividedBy(unitReserve)
       .multipliedBy(100);
     // console.log('APY of ', name, 'is', apy.toString());
@@ -151,15 +173,18 @@ const pools = [
 ];
 
 const main = async () => {
+  const sdaoUSD = await fetchTokenPriceUSD(SDAO_TOKEN);
+  // console.log('sdaoUSD', sdaoUSD);
   pools.map(async pool => {
     const result = await calculateFarmAPY(
       pool.tokenAddress,
-      pool.yearlyRewards
+      pool.yearlyRewards,
+      sdaoUSD
     );
     console.log('POOL =>', pool.name);
     console.table(result);
   });
-  const sdaoStakeApy = await calculateStakeAPY();
+  const sdaoStakeApy = await calculateStakeAPY(sdaoUSD);
   console.log('STAKE APY', sdaoStakeApy);
 };
 
