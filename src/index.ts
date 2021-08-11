@@ -4,6 +4,7 @@ import Web3 from 'web3';
 import ERC20ABI from './erc20.abi.json';
 import BigNumber from 'bignumber.js';
 import { table } from 'table';
+import chalk from 'chalk';
 
 const SDAO_TOKEN = '0x993864e43caa7f7f12953ad6feb1d1ca635b875f';
 const SDAO_STAKE_TOKEN = '0x993864e43caa7f7f12953ad6feb1d1ca635b875f';
@@ -172,7 +173,13 @@ const pools = [
 
 const main = async () => {
   let tableOutput: string[][] = [
-    ['Pool Name', 'Reserve USD', 'Total Supply', 'Staked Balance', 'APY'],
+    [
+      'Pool Name',
+      'Reserve USD',
+      'Total Supply',
+      'Staked Balance',
+      'APY',
+    ].map(el => chalk.blue(el)),
   ];
 
   const sdaoUSD = await fetchTokenPriceUSD(SDAO_TOKEN);
@@ -187,19 +194,24 @@ const main = async () => {
     // console.table(result);
     if (result) {
       tableOutput.push([
-        pool.name,
+        chalk.blue(pool.name),
         result.reserveUSD,
         result.totalSupply,
         result.stakedBalance,
-        result.apy,
+        chalk.green(result.apy),
       ]);
     }
   });
   const sdaoStakeApy = await calculateStakeAPY(sdaoUSD);
-  console.log('Result');
-  console.log('Price of SDAO Token', sdaoUSD, 'USD');
-  console.log('FARM Token', FarmToken);
-  console.log('STAKE APY', sdaoStakeApy);
+
+  console.log('FARM Token used =>', FarmToken);
+  console.log(chalk.bgBlue.green.bold('Calculation Result'));
+  console.log(
+    `${chalk.blue('SDAO Price')} => ${chalk.green(`${sdaoUSD} USD`)}`
+  );
+
+  console.log(`${chalk.blue('STAKE APY')} => ${chalk.green(sdaoStakeApy)}`);
+  console.log(chalk.blue('Farm APY'));
   console.log(table(tableOutput));
 };
 
